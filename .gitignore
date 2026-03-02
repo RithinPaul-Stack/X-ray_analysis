@@ -1,0 +1,38 @@
+# Datasets (too large for GitHub)
+chest_xray/
+
+# Virtual environment
+xray_web_app/backend/venv/
+venv/
+.venv/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+
+# Generated files
+xray_web_app/backend/annotated/
+xray_web_app/backend/reports/
+xray_web_app/backend/uploads/
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+xray_web_app/backend/tb_model_weights/logs/
+
+# Note: Model weights (.pth) ARE included per user request

@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>X-Ray Analyzer | AI-Powered Diagnostic Assistant</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/styles.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-container">
+            <div class="header-brand">
+                <div class="logo">
+                    <div class="logo-icon">
+                        <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <rect x="4" y="4" width="32" height="32" rx="8" fill="url(#logoGradient)" />
+                            <path d="M20 10V30M10 20H30" stroke="white" stroke-width="4" stroke-linecap="round" />
+                            <circle cx="20" cy="20" r="6" stroke="white" stroke-width="2" fill="none" />
+                            <defs>
+                                <linearGradient id="logoGradient" x1="4" y1="4" x2="36" y2="36">
+                                    <stop offset="0%" stop-color="#3b82f6" />
+                                    <stop offset="100%" stop-color="#06b6d4" />
+                                </linearGradient>
+                            </defs>
+                        </svg>
+                    </div>
+                    <div class="logo-text">
+                        <h1 class="logo-title">X-Ray Analyzer</h1>
+                        <span class="logo-subtitle">AI-Powered Diagnostic Assistant</span>
+                    </div>
+                </div>
+            </div>
+            <div class="header-status">
+                <div class="status-indicator">
+                    <span class="status-dot"></span>
+                    <span class="status-text">System Ready</span>
+                </div>
+                <div class="header-info">
+                    <span class="info-badge">DenseNet-121</span>
+                    <span class="info-badge">18 Pathologies</span>
+                </div>
+            </div>
+        </div>
+        <div class="header-gradient-line"></div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="container">
+            <!-- Error Banner -->
+            <div id="error-banner" class="error-banner" style="display: none;">
+                <span class="error-icon">!</span>
+                <span id="error-message" class="error-message"></span>
+                <button class="error-dismiss" onclick="hideError()">&times;</button>
+            </div>
+
+            <!-- Content Grid -->
+            <div class="content-grid">
+                <!-- Left Column - Upload Section -->
+                <section class="upload-section">
+                    <div class="section-card">
+                        <div class="section-header">
+                            <h2 class="section-title">
+                                <span class="section-icon">1</span>
+                                Upload X-Ray Image
+                            </h2>
+                        </div>
+
+                        <!-- Dropzone -->
+                        <div id="dropzone" class="dropzone">
+                            <input type="file" id="file-input" accept="image/jpeg,image/png,.dcm,.dicom,application/dicom" style="display: none;">
+                            <div id="dropzone-empty" class="dropzone-content">
+                                <div class="dropzone-icon">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                        <path d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                                    </svg>
+                                </div>
+                                <div class="dropzone-text">
+                                    <span class="text-primary">Drag & drop your X-ray image here</span>
+                                    <span class="text-secondary">or click to browse files</span>
+                                </div>
+                                <div class="dropzone-formats">
+                                    <span class="format-badge">DICOM</span>
+                                    <span class="format-badge">JPEG</span>
+                                    <span class="format-badge">PNG</span>
+                                    <span class="format-info">Max 16MB</span>
+                                </div>
+                            </div>
+                            <div id="dropzone-file" class="dropzone-file-info" style="display: none;">
+                                <div class="file-icon">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                        <path d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                    </svg>
+                                </div>
+                                <div class="file-details">
+                                    <span id="file-name" class="file-name"></span>
+                                    <span id="file-size" class="file-size"></span>
+                                </div>
+                                <div class="file-status">
+                                    <span class="status-check">&#10003;</span>
+                                    Ready for analysis
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Upload Tips -->
+                        <div class="upload-tips">
+                            <div class="tip">
+                                <span class="tip-icon">&#9432;</span>
+                                <span>For best results, use high-quality PA (posterior-anterior) chest radiographs</span>
+                            </div>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="action-buttons">
+                            <button id="analyze-btn" class="btn btn-primary" disabled onclick="analyzeImage()">
+                                <span class="btn-icon">&#9881;</span>
+                                Analyze X-Ray
+                            </button>
+                            <button id="deep-analysis-btn" class="btn btn-deep" disabled onclick="runDeepAnalysis()">
+                                <span class="btn-icon">&#128269;</span>
+                                Region Heatmap
+                            </button>
+                            <button id="download-pdf-btn" class="btn btn-pdf" disabled onclick="downloadPdfReport()">
+                                <span class="btn-icon">&#128196;</span>
+                                Download PDF
+                            </button>
+                            <button id="clear-btn" class="btn btn-secondary" disabled onclick="clearAll()">
+                                <span class="btn-icon">&#8634;</span>
+                                Clear
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Image Preview Panel -->
+                    <div id="preview-card" class="section-card image-preview-card" style="display: none;">
+                        <div class="section-header">
+                            <h2 class="section-title">
+                                <span class="section-icon">&#128444;</span>
+                                X-Ray Image
+                            </h2>
+                            <div class="image-toggle-btns">
+                                <button id="show-original-btn" class="toggle-btn active" onclick="showOriginalImage()">Original</button>
+                                <button id="show-annotated-btn" class="toggle-btn" onclick="showAnnotatedImage()" style="display: none;">Heatmap</button>
+                            </div>
+                        </div>
+                        <div class="image-preview-container">
+                            <img id="preview-image" src="" alt="X-Ray Preview" class="xray-preview-image">
+                            <img id="annotated-image" src="" alt="Annotated X-Ray" class="xray-preview-image" style="display: none;">
+                        </div>
+                    </div>
+
+                    <!-- GradCAM Heatmap Analysis Results -->
+                    <div id="yolo-results-card" class="section-card yolo-results-card" style="display: none;">
+                        <div class="section-header">
+                            <h2 class="section-title">
+                                <span class="section-icon yolo-icon">&#128269;</span>
+                                Region Heatmap Analysis
+                            </h2>
+                        </div>
+                        <div id="yolo-results-content">
+                            <!-- Heatmap Summary -->
+                            <div id="yolo-summary" class="yolo-summary"></div>
+
+                            <!-- Highlighted Pathologies List -->
+                            <div id="yolo-detections" class="yolo-detections">
+                                <h4 class="section-subtitle">
+                                    <span class="subtitle-icon">&#127919;</span>
+                                    Highlighted Pathology Regions
+                                </h4>
+                                <div id="detections-list" class="detections-list"></div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Right Column - Results Section -->
+                <section class="results-section">
+                    <div class="section-card results-card">
+                        <div class="section-header">
+                            <h2 class="section-title">
+                                <span class="section-icon">2</span>
+                                Analysis Results
+                            </h2>
+                            <span id="analysis-id" class="analysis-id" style="display: none;"></span>
+                        </div>
+
+                        <!-- Results Placeholder -->
+                        <div id="results-placeholder" class="results-placeholder">
+                            <div class="placeholder-icon">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                    <path d="M9 17H5a2 2 0 01-2-2V5a2 2 0 012-2h14a2 2 0 012 2v10a2 2 0 01-2 2h-4" />
+                                    <path d="M12 15l-3 3m0 0l3 3m-3-3h12" />
+                                </svg>
+                            </div>
+                            <h3 class="placeholder-title">No Analysis Yet</h3>
+                            <p class="placeholder-text">
+                                Upload a chest X-ray image and click "Analyze" to receive
+                                AI-powered diagnostic insights.
+                            </p>
+                            <div class="placeholder-steps">
+                                <div class="step">
+                                    <span class="step-num">1</span>
+                                    <span>Upload DICOM/JPEG/PNG image</span>
+                                </div>
+                                <div class="step">
+                                    <span class="step-num">2</span>
+                                    <span>Click Analyze button</span>
+                                </div>
+                                <div class="step">
+                                    <span class="step-num">3</span>
+                                    <span>Review AI findings</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Results Content -->
+                        <div id="results-content" class="analysis-results" style="display: none;">
+                            <!-- Tabs -->
+                            <div class="results-tabs">
+                                <button class="tab-btn active" data-tab="overview" onclick="switchTab('overview')">
+                                    <span class="tab-icon">&#128200;</span>
+                                    Overview
+                                </button>
+                                <button class="tab-btn" data-tab="pathologies" onclick="switchTab('pathologies')">
+                                    <span class="tab-icon">&#128202;</span>
+                                    All Pathologies
+                                </button>
+                                <button class="tab-btn" data-tab="disclaimer" onclick="switchTab('disclaimer')">
+                                    <span class="tab-icon">&#9432;</span>
+                                    Disclaimer
+                                </button>
+                            </div>
+
+                            <!-- Overview Tab -->
+                            <div id="tab-overview" class="tab-content">
+                                <div id="status-banner" class="status-banner">
+                                    <div class="status-icon" id="status-icon"></div>
+                                    <div class="status-content">
+                                        <h3 id="status-title" class="status-title"></h3>
+                                        <p id="status-message-text" class="status-message"></p>
+                                    </div>
+                                    <div class="status-stats">
+                                        <div class="stat">
+                                            <span id="stat-findings" class="stat-value">0</span>
+                                            <span class="stat-label">Findings</span>
+                                        </div>
+                                        <div class="stat">
+                                            <span id="stat-screened" class="stat-value">0</span>
+                                            <span class="stat-label">Screened</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Top Findings -->
+                                <div id="findings-section" class="findings-section" style="display: none;">
+                                    <h4 class="section-subtitle">
+                                        <span class="subtitle-icon">&#9888;</span>
+                                        Key Findings Requiring Attention
+                                    </h4>
+                                    <div id="findings-list" class="findings-list"></div>
+                                </div>
+
+                                <!-- Recommendations -->
+                                <div id="recommendations-section" class="recommendations-section">
+                                    <h4 class="section-subtitle">
+                                        <span class="subtitle-icon">&#128203;</span>
+                                        Clinical Recommendations
+                                    </h4>
+                                    <ul id="recommendations-list" class="recommendations-list"></ul>
+                                </div>
+                            </div>
+
+                            <!-- Pathologies Tab -->
+                            <div id="tab-pathologies" class="tab-content" style="display: none;">
+                                <div class="pathologies-header">
+                                    <span id="pathologies-count" class="pathologies-count"></span>
+                                </div>
+                                <div id="pathologies-grid" class="pathologies-grid"></div>
+                            </div>
+
+                            <!-- Disclaimer Tab -->
+                            <div id="tab-disclaimer" class="tab-content" style="display: none;">
+                                <div class="disclaimer-card">
+                                    <div class="disclaimer-icon">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                            <path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                        </svg>
+                                    </div>
+                                    <h4 class="disclaimer-title">Medical Disclaimer</h4>
+                                    <p id="disclaimer-text" class="disclaimer-text"></p>
+                                    <div class="disclaimer-points">
+                                        <div class="disclaimer-point">
+                                            <span class="point-icon">&#10003;</span>
+                                            <span>This tool is designed to assist, not replace, clinical judgment</span>
+                                        </div>
+                                        <div class="disclaimer-point">
+                                            <span class="point-icon">&#10003;</span>
+                                            <span>All findings should be verified by a qualified radiologist</span>
+                                        </div>
+                                        <div class="disclaimer-point">
+                                            <span class="point-icon">&#10003;</span>
+                                            <span>Clinical correlation with patient history is essential</span>
+                                        </div>
+                                        <div class="disclaimer-point">
+                                            <span class="point-icon">&#10003;</span>
+                                            <span>AI predictions may have false positives and false negatives</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </div>
+    </main>
+
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="loading-overlay" style="display: none;">
+        <div class="loading-content">
+            <div class="scanner-container">
+                <div class="scanner-xray">
+                    <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <ellipse cx="50" cy="40" rx="35" ry="30" stroke="currentColor" stroke-width="1.5" opacity="0.3" />
+                        <ellipse cx="35" cy="40" rx="12" ry="18" stroke="currentColor" stroke-width="1" opacity="0.5" />
+                        <ellipse cx="65" cy="40" rx="12" ry="18" stroke="currentColor" stroke-width="1" opacity="0.5" />
+                        <path d="M50 20 L50 70" stroke="currentColor" stroke-width="1" opacity="0.3" />
+                        <ellipse cx="50" cy="75" rx="8" ry="5" stroke="currentColor" stroke-width="1" opacity="0.4" />
+                    </svg>
+                    <div class="scan-line"></div>
+                </div>
+            </div>
+            <div class="loading-text">
+                <h3 class="loading-title">Analyzing X-Ray</h3>
+                <p class="loading-subtitle">AI model is processing the radiograph...</p>
+            </div>
+            <div class="loading-progress">
+                <div class="progress-track">
+                    <div id="progress-fill" class="progress-fill" style="width: 30%;"></div>
+                </div>
+                <span id="progress-text" class="progress-text">Processing...</span>
+            </div>
+            <div class="loading-steps">
+                <div class="step active">
+                    <span class="step-icon">&#128196;</span>
+                    <span>Preprocessing image</span>
+                </div>
+                <div class="step">
+                    <span class="step-icon">&#129504;</span>
+                    <span>Running DenseNet-121</span>
+                </div>
+                <div class="step">
+                    <span class="step-icon">&#128202;</span>
+                    <span>Generating report</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-gradient-line"></div>
+        <div class="footer-container">
+            <div class="footer-content">
+                <div class="footer-disclaimer">
+                    <span class="disclaimer-icon">&#9432;</span>
+                    <span class="disclaimer-text">For research and educational purposes only. Not intended for clinical diagnosis.</span>
+                </div>
+                <div class="footer-info">
+                    <span class="footer-version">v1.0.0</span>
+                    <span class="footer-separator">|</span>
+                    <span class="footer-credits">Powered by torchxrayvision DenseNet-121 + GradCAM</span>
+                    <span class="footer-separator">|</span>
+                    <span class="footer-copyright">&copy; 2024 X-Ray Analyzer</span>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="/static/js/app.js"></script>
+</body>
+</html>

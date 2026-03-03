@@ -35,4 +35,5 @@ Thumbs.db
 *.log
 xray_web_app/backend/tb_model_weights/logs/
 
-# Note: Model weights (.pth) ARE included per user request
+# Model checkpoints (too large for GitHub - use download script)
+xray_web_app/backend/tb_model_weights/checkpoints/*.pth

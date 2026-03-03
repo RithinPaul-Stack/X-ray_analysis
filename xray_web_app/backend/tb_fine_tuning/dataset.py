@@ -1,7 +1,8 @@
 """
-PyTorch Dataset for TB Chest X-Ray Classification
+PyTorch Dataset for 3-Class Chest X-Ray Classification
 
-Handles loading TB and Normal chest X-ray images with proper preprocessing.
+Handles loading TB, Normal, and Pneumonia chest X-ray images with proper preprocessing.
+Supports 3-class classification: Normal (0), TB (1), Pneumonia (2)
 """
 
 import os
@@ -19,7 +20,12 @@ from .augmentations import get_transforms
 
 class TBXRayDataset(Dataset):
     """
-    Dataset for TB vs Normal chest X-ray classification.
+    Dataset for 3-class chest X-ray classification: Normal, TB, Pneumonia.
+
+    Labels:
+        0 = Normal
+        1 = TB
+        2 = Pneumonia
 
     Args:
         config: Configuration object
@@ -50,6 +56,7 @@ class TBXRayDataset(Dataset):
         print(f"Loaded {len(self)} images for {split} split")
         print(f"  - Normal: {sum(1 for l in self.labels if l == 0)}")
         print(f"  - TB: {sum(1 for l in self.labels if l == 1)}")
+        print(f"  - Pneumonia: {sum(1 for l in self.labels if l == 2)}")
 
     def _load_dataset(self):
         """Load all image paths and labels"""
@@ -87,6 +94,29 @@ class TBXRayDataset(Dataset):
 
             self.image_paths.extend(normal_images)
             self.labels.extend([0] * len(normal_images))
+
+        # Load Pneumonia images (label = 2)
+        pneumonia_path = self.config.pneumonia_path
+        if os.path.exists(pneumonia_path):
+            pneumonia_images = [
+                os.path.join(pneumonia_path, f)
+                for f in os.listdir(pneumonia_path)
+                if f.lower().endswith(('.png', '.jpg', '.jpeg'))
+            ]
+
+            # Randomly sample if we have more than max_pneumonia_samples
+            if len(pneumonia_images) > self.config.max_pneumonia_samples:
+                random.seed(self.config.seed)
+                pneumonia_images = random.sample(
+                    pneumonia_images,
+                    self.config.max_pneumonia_samples
+                )
+                print(f"Sampled {len(pneumonia_images)} Pneumonia images from available pool")
+            else:
+                print(f"Found {len(pneumonia_images)} Pneumonia images")
+
+            self.image_paths.extend(pneumonia_images)
+            self.labels.extend([2] * len(pneumonia_images))
 
     def _apply_split(self):
         """Split dataset into train/val/test"""
@@ -153,7 +183,8 @@ class TBXRayDataset(Dataset):
         """Get count of each class"""
         return {
             'Normal': sum(1 for l in self.labels if l == 0),
-            'TB': sum(1 for l in self.labels if l == 1)
+            'TB': sum(1 for l in self.labels if l == 1),
+            'Pneumonia': sum(1 for l in self.labels if l == 2)
         }
 
     def get_sample_weights(self) -> torch.Tensor:
@@ -163,14 +194,17 @@ class TBXRayDataset(Dataset):
         """
         class_counts = self.get_class_counts()
         total = len(self.labels)
+        num_classes = 3
 
         # Weight inversely proportional to class frequency
         weights = []
         for label in self.labels:
             if label == 0:  # Normal
-                weights.append(total / (2 * class_counts['Normal']))
-            else:  # TB
-                weights.append(total / (2 * class_counts['TB']))
+                weights.append(total / (num_classes * class_counts['Normal']))
+            elif label == 1:  # TB
+                weights.append(total / (num_classes * class_counts['TB']))
+            else:  # Pneumonia
+                weights.append(total / (num_classes * class_counts['Pneumonia']))
 
         return torch.tensor(weights, dtype=torch.float32)
 

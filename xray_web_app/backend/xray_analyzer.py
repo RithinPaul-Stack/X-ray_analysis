@@ -45,11 +45,11 @@ class TBClassifier(nn.Module):
         self.backbone = backbone
         self.feature_dim = 1024
 
-        # TB classification head
+        # 3-class classification head (Normal, TB, Pneumonia)
         self.tb_head = TBClassificationHead(
             in_features=self.feature_dim,
             hidden_features=512,
-            num_classes=2,
+            num_classes=3,
             dropout_rate=0.5
         )
 
@@ -73,8 +73,11 @@ class XRayAnalyzer:
 
     def __init__(self):
         """Initialize the model on startup"""
-        # Use MPS (Metal Performance Shaders) on Mac M1/M2, fallback to CPU
-        if torch.backends.mps.is_available():
+        # Cross-platform device detection: CUDA (Windows/Linux) > MPS (Mac) > CPU
+        if torch.cuda.is_available():
+            self.device = torch.device("cuda")
+            print("  Using NVIDIA GPU (CUDA)")
+        elif hasattr(torch.backends, 'mps') and torch.backends.mps.is_available():
             self.device = torch.device("mps")
             print("  Using Apple Silicon GPU (MPS)")
         else:
@@ -137,13 +140,13 @@ class XRayAnalyzer:
 
     def analyze_tb(self, img_tensor):
         """
-        Perform TB classification on preprocessed image
+        Perform 3-class classification on preprocessed image (Normal, TB, Pneumonia)
 
         Args:
             img_tensor: Preprocessed image tensor
 
         Returns:
-            Dictionary with TB classification results
+            Dictionary with classification results for Normal, TB, and Pneumonia
         """
         if not self.tb_available or self.tb_classifier is None:
             return None
@@ -154,16 +157,25 @@ class XRayAnalyzer:
 
             normal_prob = float(probs[0][0].cpu().numpy())
             tb_prob = float(probs[0][1].cpu().numpy())
+            pneumonia_prob = float(probs[0][2].cpu().numpy())
+
+            # Get prediction (class with highest probability)
+            pred_idx = probs[0].argmax().item()
+            class_names = ['Normal', 'TB', 'Pneumonia']
+            prediction = class_names[pred_idx]
+            confidence = float(probs[0][pred_idx].cpu().numpy())
 
             return {
-                'tb_probability': tb_prob,
                 'normal_probability': normal_prob,
-                'prediction': 'TB' if tb_prob > 0.5 else 'Normal',
-                'confidence': max(tb_prob, normal_prob),
-                'is_tb_positive': tb_prob > 0.5
+                'tb_probability': tb_prob,
+                'pneumonia_probability': pneumonia_prob,
+                'prediction': prediction,
+                'confidence': confidence,
+                'is_tb_positive': prediction == 'TB',
+                'is_pneumonia': prediction == 'Pneumonia'
             }
         except Exception as e:
-            print(f"TB classification error: {e}")
+            print(f"Classification error: {e}")
             return None
 
     def load_image(self, img_path):
@@ -315,7 +327,7 @@ class XRayAnalyzer:
             'disclaimer': self._get_disclaimer()
         }
 
-        # Add TB classification results if available
+        # Add TB/Pneumonia classification results if available
         if tb_results:
             result['tb_classification'] = tb_results
             # Update status if TB positive
@@ -326,13 +338,25 @@ class XRayAnalyzer:
                 if 'TB screening recommended' not in result['recommendations']:
                     result['recommendations'].insert(0,
                         "URGENT: TB screening positive. Immediate referral to pulmonology/infectious disease specialist recommended for confirmatory testing (sputum culture, GeneXpert).")
+            # Update status if Pneumonia detected
+            elif tb_results.get('is_pneumonia', False):
+                result['status'] = 'ABNORMAL'
+                result['status_message'] = self._get_status_message(True, abnormal_count, pneumonia_positive=True)
+                # Add Pneumonia-specific recommendation
+                result['recommendations'].insert(0,
+                    "PNEUMONIA DETECTED: Clinical evaluation recommended. Consider chest X-ray follow-up and appropriate antibiotic therapy based on clinical assessment.")
 
         return result
 
-    def _get_status_message(self, has_abnormality, abnormal_count, tb_positive=False):
+    def _get_status_message(self, has_abnormality, abnormal_count, tb_positive=False, pneumonia_positive=False):
         """Generate status message based on findings"""
         if tb_positive:
             base_msg = "TB SCREENING POSITIVE - Immediate clinical attention recommended."
+            if abnormal_count > 0:
+                return f"{base_msg} Additionally, {abnormal_count} other potential abnormalities detected."
+            return base_msg
+        elif pneumonia_positive:
+            base_msg = "PNEUMONIA DETECTED - Clinical evaluation recommended."
             if abnormal_count > 0:
                 return f"{base_msg} Additionally, {abnormal_count} other potential abnormalities detected."
             return base_msg
